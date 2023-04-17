@@ -1,5 +1,5 @@
 # ---------------------------------------------------------------------------
-# ejmap_prep.py
+# ejmap_step1.py
 # Authors: Mariel Sorlien
 # Last updated: 2023-04-12
 # Python 3.7
@@ -23,8 +23,8 @@ arcpy.env.overwriteOutput = True
 
 # Set workspace
 base_folder = os.getcwd()
-gis_folder = os.path.join(base_folder, 'gis', 'ejmap_prep.gdb')
-csv_folder = os.path.join(base_folder, 'data-raw')
+gis_folder = os.path.join(base_folder, 'gis_data', 'int_gisdata', 'ejmap_prep.gdb')
+csv_folder = os.path.join(base_folder, 'tabular_data')
 output_folder = os.path.join(base_folder, 'data')
 
 # Set default projection
