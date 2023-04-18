@@ -97,7 +97,7 @@ if add_town_names is True:
     print('\tUpdating lists (metadata, columns)')
     data_source += "; " + town_data_source
     source_year += "; " + town_source_year
-    keep_fields.append(town_columns)
+    keep_fields += town_columns
     print('\tSaving data')
     arcpy.management.CopyFeatures(in_features=gis_temp,
                                   out_feature_class=gis_output)
@@ -113,7 +113,7 @@ if add_watershed_names is True:
     print('\tUpdating lists (metadata, columns)')
     data_source += "; " + watershed_data_source
     source_year += "; " + watershed_source_year
-    keep_fields.append(watershed_columns)
+    keep_fields += watershed_columns
     print('\tSaving data')
     arcpy.management.CopyFeatures(in_features=gis_temp,
                                   out_feature_class=gis_output)
@@ -129,7 +129,7 @@ if add_study_area is True:
     print('\tUpdating lists (metadata, columns)')
     data_source += "; " + study_area_data_source
     source_year += "; " + study_area_source_year
-    keep_fields.append(study_area_columns)
+    keep_fields += study_area_columns
     print('\tSaving data')
     arcpy.management.CopyFeatures(in_features=gis_temp,
                                   out_feature_class=gis_output)
@@ -149,8 +149,8 @@ print('Adding columns (DataSource, SourceYear)')
 arcpy.management.AddFields(gis_output,
                            [
                                # Field name, field type, field alias, field length, default value
-                               ['DataSource', 'TEXT', 'DataSource', 50],
-                               ['SourceYear', 'TEXT', 'SourceYear', 50]
+                               ['DataSource', 'TEXT', 'DataSource', 100],
+                               ['SourceYear', 'TEXT', 'SourceYear', 100]
                            ])
 arcpy.management.CalculateFields(gis_output,
                                  "PYTHON3",
