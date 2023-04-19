@@ -1,3 +1,4 @@
 tabular_data
-.idea/*
 gis_data
+.idea
+functions/__pycache__
