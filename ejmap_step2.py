@@ -1,12 +1,11 @@
 # ---------------------------------------------------------------------------
 # ejmap_step1.py
 # Authors: Mariel Sorlien
-# Last updated: 2023-04-12
+# Last updated: 2023-04-19
 # Python 3.7
 #
 # Description:
 # Combines multiple datasets and calculates state and study area percentiles
-# Preps data for NBEP/EJmap
 # REQUIRES GIS/ARCPY
 # ---------------------------------------------------------------------------
 
@@ -14,7 +13,7 @@ import arcpy
 import os
 import pandas as pd
 
-from functions.block_groups import refine_block_groups
+from functions.add_metadata import add_metadata_fields
 
 arcpy.env.overwriteOutput = True
 
@@ -23,71 +22,97 @@ arcpy.env.overwriteOutput = True
 
 # Set workspace
 base_folder = os.getcwd()
-gis_folder = os.path.join(base_folder, 'gis_data', 'int_gisdata', 'ejmap_prep.gdb')
-csv_folder = os.path.join(base_folder, 'tabular_data')
-output_folder = os.path.join(base_folder, 'data')
+gis_folder = base_folder + '/gis_data/int_gisdata/ejmap_prep.gdb'
+csv_folder = base_folder + '/tabular_data'
 
 # Set default projection
 arcpy.env.outputCoordinateSystem = arcpy.SpatialReference("NAD 1983 UTM Zone 19N")
 
 # Set variables
 state_list = ['Rhode Island', 'Connecticut', 'Massachusetts']
-gis_block_groups = os.path.join(gis_folder, 'block_groups')
-clip_output_to_study_area = True
-
-# Set metadata (block groups)
-data_source = 'Census'
-source_year = '2022'
-
+gis_block_groups = gis_folder + '/MACTRI_block_groups'
 
 # ------------------------------ STEP 2 -------------------------------------
-# Refine block group data
-
-# Set options
-add_town_names = True
-add_watershed_names = True
-add_study_area = True
-clip_to_land = True
-
-# Set inputs
-gis_towns = ''
-gis_watersheds = os.path.join(gis_folder, 'watersheds')
-gis_study_area = ''
-
-# Set output
-gis_block_groups_2 = os.path.join(gis_folder, 'block_groups_copy')
-
-# Set metadata
-step2_data_source = 'USGS'
-step2_source_year = '2023'
-
-# ------------------------------ STEP 3 -------------------------------------
 # Add EPA data (MANDATORY)
 
-# ------------------------------ STEP 4 -------------------------------------
+# Set variables
+epa_csv = csv_folder + "/source_data/EJSCREEN_2022_StatePct_with_AS_CNMI_GU_VI.csv"
+
+# List metrics
+epa_metrics = ['MINORPCT', 'LOWINCPCT', 'UNEMPPCT', 'LINGISOPCT', 'LESSHSPCT',
+               'UNDER5PCT', 'OVER64PCT', 'PM25', 'OZONE', 'DLPM', 'PTRAF',
+               'PRE1960PCT', 'PNPL', 'PRMP', 'PTSDF', 'UST', 'PWDIS']
+# Set new variable names. Must be 8 characters max.
+# old name: new name
+rename_epa_columns = {'LOWINCPCT': 'LWINCPCT',
+                      'LESSHSPCT': 'LESHSPCT',
+                      'LINGISOPCT': 'LNGISPCT',
+                      'UNDER5PCT': 'UNDR5PCT',
+                      'OVER64PCT': 'OVR64PCT',
+                      'PRE1960PCT': 'LDPNT'
+                      }
+
+# ------------------------------ STEP 3 -------------------------------------
 # Add supplemental datasets
 
-# ------------------------------ STEP 5 -------------------------------------
+# Indicate which datasets to include
+add_cdc = True
+add_nlcd_tree = True
+add_nlcd_impervious_surface = True
+add_noaa_sea_level_rise_raster = True
+add_first_street_flood = True
+add_first_street_heat = True
+add_first_street_fire = False
+
+# Indicate whether raster datasets have already been processed
+# If false will use csv output instead
+process_raster_trees = True
+process_raster_impervious = True
+process_raster_sea = True
+
+# List inputs
+cdc_csv = csv_folder + '/source_data/PLACES__Census_Tract_Data__GIS_Friendly_Format___2022_release.csv'
+tree_raster = ''
+impervious_surface_raster = ''
+sea_level_rise_raster = ''
+first_street_flood = ''
+first_stree_heat = ''
+first_street_fire = ''
+
+# List outputs
+tree_csv = ''
+impervious_surface_csv = ''
+sea_level_rise_csv = ''
+
+# List metrics
+cdc_metrics = ['CASTHMA_CrudePrev', 'BPHIGH_CrudePrev', 'CANCER_CrudePrev',
+               'DIABETES_CrudePrev', 'MHLTH_CrudePrev']
+# Set new variable names. Must be 8 characters max.
+# old name: new name
+rename_cdc_columns = {'CASTHMA_CrudePrev': 'ASTHMA',
+                      'BPHIGH_CrudePrev': 'BPHIGH',
+                      'CANCER_CrudePrev': 'CANCER',
+                      'DIABETES_CrudePrev': 'DIABE',
+                      'MHLTH_CrudePrev': 'MHEALTH'
+                      }
+
+# ------------------------------ STEP 4 -------------------------------------
 # Calculate percentiles, add metadata
 
 calculate_state_percentiles = True
 calculate_study_area_percentiles = True
 
+study_area_column = 'Study_Area'
+study_area_values = ['Narragansett Bay Watershed', 'Little Narragansett Bay Watershed',
+                     'Southwest Coastal Ponds Watershed']
+
+data_source = ''
+source_year = ''
+
 # ---------------------------- RUN SCRIPT -----------------------------------
 
 # Step 2 ----
-if add_town_names is True or add_watershed_names is True or add_study_area is True or clip_to_land is True:
-    print('REFINING BLOCK GROUPS')
-    # Update block group data
-    refine_block_groups(add_town_names, add_watershed_names, add_study_area, clip_to_land,
-                        gis_block_groups, gis_towns, gis_watersheds, gis_study_area)
-    gis_block_groups = gis_block_groups_2
-    # Update metadata
-    data_source += "; " + step2_data_source
-    source_year += "; " + step2_source_year
 
 # Step 3 ----
 
 # Step 4 ----
-
-# Step 5 ----
