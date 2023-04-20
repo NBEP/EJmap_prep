@@ -15,6 +15,8 @@ import pandas as pd
 
 from functions.add_csv_dataset import add_csv_dataset
 from functions.add_csv_dataset import add_first_street_data
+from functions.add_raster_dataset import add_raster_dataset
+from functions.add_raster_dataset import process_raster_csv
 from functions.add_metadata import add_metadata_fields
 
 arcpy.env.overwriteOutput = True
@@ -33,7 +35,7 @@ arcpy.env.outputCoordinateSystem = arcpy.SpatialReference("NAD 1983 UTM Zone 19N
 # Set variables
 state_list = ['Rhode Island', 'Connecticut', 'Massachusetts']
 gis_block_groups = gis_folder + '/MACTRI_block_groups'
-keep_fields = ['Block_Group', 'Town', 'State', 'Study_Area', 'ALAND', 'AWATER']
+keep_fields = ['ID', 'Town', 'State', 'Study_Area', 'ALAND', 'AWATER']
 
 # Set outputs
 tsv_output = csv_folder + '/block_groups_final.tsv'
@@ -74,7 +76,6 @@ add_first_street_heat = True
 # Indicate whether to process raster datasets OR use csv summary file instead
 process_raster_trees = True
 process_raster_impervious = True
-process_raster_sea = True
 
 # List inputs
 cdc_csv = csv_folder + '/source_data/PLACES__Census_Tract_Data__GIS_Friendly_Format___2022_release.csv'
@@ -89,7 +90,6 @@ first_street_heat = csv_folder + '/source_data/heat_v1.1_summary_fsf_heat_tract_
 # List outputs
 tree_csv = csv_folder + '/int_data/nlcd_tree.csv'
 impervious_surface_csv = '/int_data/nlcd_impervious.csv'
-sea_level_rise_csv = '/int_data/noaa_slr.csv'
 
 # Set variables
 sea_level_rise_depth_ft = 1.6
@@ -162,12 +162,32 @@ if add_cdc is True:
     all_metrics += list(map(rename_cdc_metrics.get, cdc_metrics, cdc_metrics))
     dataset_list += ['df_cdc']
 
-# if add_nlcd_tree is True:
-#     print('\nProcessing NLCD tree data')
-#
-# if add_nlcd_impervious_surface is True:
-#     print('\nProcessing NLCD impervious data')
-#
+if add_nlcd_tree is True:
+    print('\nProcessing NLCD tree data')
+    if process_raster_trees is True:
+        # Process raster, save output as csv
+        add_raster_dataset(gis_block_groups, tree_raster, tree_csv)
+    # Process csv data
+    process_raster_csv(tree_csv, 'TREE', temp_csv)
+    print('Rereading file')
+    df_tree = pd.read_csv(temp_csv, sep=",")
+    print('Adding variable names to list')
+    all_metrics += ['TREE']
+    dataset_list += ['df_tree']
+
+if add_nlcd_impervious_surface is True:
+    print('\nProcessing NLCD impervious data')
+    if process_raster_impervious is True:
+        # Process raster, save output as csv
+        add_raster_dataset(gis_block_groups, impervious_surface_raster, impervious_surface_csv)
+    # Process csv data
+    process_raster_csv(impervious_surface_csv, 'IMPER', temp_csv)
+    print('Rereading file')
+    df_imper = pd.read_csv(temp_csv, sep=",")
+    print('Adding variable names to list')
+    all_metrics += ['IMPER']
+    dataset_list += ['df_imper']
+
 # if add_noaa_sea_level_rise is True:
 #     print('\nProcessing NOAA sea level data')
 

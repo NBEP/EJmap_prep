@@ -47,8 +47,7 @@ def add_csv_dataset(csv_input, metrics, new_metrics, extra_columns,
 
 def add_first_street_data(csv_input, metric, csv_output):
     print('Reading in csv')
-    df = pd.read_csv(csv_input,
-                     sep=",")
+    df = pd.read_csv(csv_input, sep=",")
     print('Calculating average ' + metric.lower() + ' risk')
     df[metric.upper()] = (df['count_' + metric.lower() + 'factor1'] +
                           2*df['count_' + metric.lower() + 'factor2'] +
