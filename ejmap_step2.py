@@ -343,7 +343,7 @@ print('\nSAVING DATA')
 print('Saving csv')
 df_bg.to_csv(csv_output,
              index=False,
-             na_rep='999999')
+             na_rep='NoData')
 
 print('Saving shapefile copy')
 arcpy.management.CopyFeatures(in_features=gis_block_groups,
