@@ -13,11 +13,12 @@ import pandas as pd
 # Temp values
 temp_shp = arcpy.env.scratchFolder + '/temp_shapefile.shp'
 temp_shp2 = arcpy.env.scratchFolder + '/temp_shapefile2.shp'
+temp_excel = arcpy.env.scratchFolder + '/temp_excel.xls'
 
 # --------------------- add_csv_dataset -----------------------------
 
 
-def intersect_slr_block_groups(slr_input, slr_erase, bg_input, excel_output):
+def intersect_slr_block_groups(slr_input, slr_erase, bg_input, csv_output):
     print('Erasing areas that overlap next lowest flood level')
     # Avoid double count from overlapping areas
     arcpy.analysis.Erase(in_features=slr_input,
@@ -44,4 +45,9 @@ def intersect_slr_block_groups(slr_input, slr_erase, bg_input, excel_output):
                                  method='KEEP_FIELDS')
     print('Exporting data to excel')
     arcpy.conversion.TableToExcel(Input_Table=temp_shp,
-                                  Output_Excel_File=excel_output)
+                                  Output_Excel_File=temp_excel)
+    print('Converting to csv')
+    # Read in excel as dataframe
+    df = pd.read_excel(temp_excel)
+    # Save as csv
+    df.to_csv(csv_output, index=False)

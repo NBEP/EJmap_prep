@@ -12,6 +12,7 @@
 import arcpy
 import os
 import pandas as pd
+import numpy as np
 import math
 
 from functions.add_csv_dataset import add_csv_dataset
@@ -19,7 +20,6 @@ from functions.add_csv_dataset import add_first_street_data
 from functions.add_raster_dataset import add_raster_dataset
 from functions.add_raster_dataset import process_raster_csv
 from functions.calculate_sea_level_rise import intersect_slr_block_groups
-from functions.add_metadata import add_metadata_fields
 
 arcpy.env.overwriteOutput = True
 
@@ -40,7 +40,7 @@ gis_block_groups = gis_folder + '/MACTRI_block_groups'
 keep_fields = ['GEOID', 'Town', 'State', 'Study_Area', 'ALAND', 'AWATER']
 
 # Set outputs
-tsv_output = csv_folder + '/block_groups_final.tsv'
+csv_output = csv_folder + '/block_groups_final.csv'
 gis_output = gis_folder + '/block_groups_final'
 
 # ------------------------------ STEP 2 -------------------------------------
@@ -76,8 +76,9 @@ add_first_street_flood = True
 add_first_street_heat = True
 
 # Indicate whether to process raster datasets OR use csv summary file instead
-process_raster_trees = True
-process_raster_impervious = True
+skip_to_tree_csv = False
+skip_to_impervious_surface_csv = False
+skip_to_sea_level_csv = False
 
 # List inputs
 cdc_csv = csv_folder + '/source_data/PLACES__Census_Tract_Data__GIS_Friendly_Format___2022_release.csv'
@@ -92,6 +93,8 @@ first_street_heat = csv_folder + '/source_data/heat_v1.1_summary_fsf_heat_tract_
 # List outputs
 tree_csv = csv_folder + '/int_data/nlcd_tree.csv'
 impervious_surface_csv = csv_folder + '/int_data/nlcd_impervious.csv'
+sea_level_low_csv = csv_folder + '/int_data/noaa_slr_1ft.csv'
+sea_level_high_csv = csv_folder + '/int_data/noaa_slr_2ft.csv'
 
 # Set variables
 sea_level_rise_depth_ft = 1.6
@@ -129,7 +132,7 @@ temp_csv = arcpy.env.scratchFolder + '/temp_csv.csv'
 temp_excel = arcpy.env.scratchFolder + '/temp_excel.xls'
 inverse_metrics = []  # List of metrics where higher values are better, not worse
 
-print('Processing block group data')
+print('ADDING BLOCK GROUP DATA')
 print('Exporting table to excel')
 arcpy.conversion.TableToExcel(gis_block_groups, block_groups_xls)
 print('Converting to dataframe')
@@ -142,7 +145,7 @@ df_bg['Tract_ID'] = df_bg.Tract_ID.str[:-1]
 df_bg['Tract_ID'] = df_bg['Tract_ID'].astype(float)
 
 # Step 2 ----
-print('\nProcessing EPA data')
+print('\nADDING EPA DATA')
 # Import csv, drop extra data, rename columns, save as temp  csv
 add_csv_dataset(epa_csv, epa_metrics, rename_epa_metrics,
                 ['ID', 'STATE_NAME', 'ACSTOTPOP'],
@@ -151,13 +154,13 @@ print('Merging with block group data')
 # Reread csv file
 df_epa = pd.read_csv(temp_csv, sep=",")
 # Merge to block group data
-df_bg = pd.merge(df_bg, df_epa, left_on=['GEOID'], right_on='ID', how='left')
+df_bg = pd.merge(df_bg, df_epa, left_on='GEOID', right_on='ID', how='left')
 print('Adding variable names to list')
 all_metrics = list(map(rename_epa_metrics.get, epa_metrics, epa_metrics))
 
 # Step 3 ----
 if add_cdc is True:
-    print('\nProcessing CDC data')
+    print('\nADDING CDC DATA')
     # Import csv, drop extra data, rename columns, save as temp  csv
     add_csv_dataset(cdc_csv, cdc_metrics, rename_cdc_metrics,
                     ['TractFIPS', 'StateDesc'],
@@ -166,13 +169,13 @@ if add_cdc is True:
     # Reread csv file
     df_cdc = pd.read_csv(temp_csv, sep=",")
     # Merge to block group data
-    df_bg = pd.merge(df_bg, df_cdc, left_on=['Tract_ID'], right_on='TractFIPS', how='left')
+    df_bg = pd.merge(df_bg, df_cdc, left_on='Tract_ID', right_on='TractFIPS', how='left')
     print('Adding variable names to list')
     all_metrics += list(map(rename_cdc_metrics.get, cdc_metrics, cdc_metrics))
 
 if add_nlcd_tree is True:
-    print('\nProcessing NLCD tree data')
-    if process_raster_trees is True:
+    print('\nADDING NLCD TREE DATA')
+    if skip_to_tree_csv is False:
         # Process raster, save output as csv
         add_raster_dataset(gis_block_groups, tree_raster, tree_csv)
     # Process csv data
@@ -187,8 +190,8 @@ if add_nlcd_tree is True:
     inverse_metrics += ['TREE']
 
 if add_nlcd_impervious_surface is True:
-    print('\nProcessing NLCD impervious data')
-    if process_raster_impervious is True:
+    print('\nADDING NLCD IMPERVIOUS DATA')
+    if skip_to_impervious_surface_csv is False:
         # Process raster, save output as csv
         add_raster_dataset(gis_block_groups, impervious_surface_raster, impervious_surface_csv)
     # Process csv data
@@ -202,25 +205,29 @@ if add_nlcd_impervious_surface is True:
     all_metrics += ['IMPER']
 
 if add_noaa_sea_level_rise is True:
-    print('\nProcessing NOAA sea level rise data')
+    print('\nADDING NOAA SEA LEVEL RISE DATA')
 
     slr_low = math.floor(sea_level_rise_depth_ft)
     slr_high = math.ceil(sea_level_rise_depth_ft)
     slr_remainder = sea_level_rise_depth_ft - slr_low
 
     print('Calculating acres land covered by ' + str(slr_low) + ' ft sea level rise')
-    intersect_slr_block_groups(noaa_sea_level_rise_low, noaa_sea_level_rise_0ft, gis_block_groups, temp_excel)
-    print('Reading excel file')
-    df_low = pd.read_excel(temp_excel)
+    if skip_to_sea_level_csv is False:
+        intersect_slr_block_groups(noaa_sea_level_rise_low, noaa_sea_level_rise_0ft, gis_block_groups,
+                                   sea_level_low_csv)
+    print('Reading csv')
+    df_low = pd.read_csv(sea_level_low_csv)
     print('Adjusting columns')
     df_low['SLR_low'] = df_low['ASLR']
     df_low = df_low[['GEOID', 'ALAND', 'SLR_low']]
 
     if slr_low != slr_high:
         print('Calculating acres land covered by ' + str(slr_high) + ' ft sea level rise')
-        intersect_slr_block_groups(noaa_sea_level_rise_high, noaa_sea_level_rise_low, gis_block_groups, temp_excel)
-        print('Reading excel file')
-        df_high = pd.read_excel(temp_excel)
+        if skip_to_sea_level_csv is False:
+            intersect_slr_block_groups(noaa_sea_level_rise_high, noaa_sea_level_rise_low, gis_block_groups,
+                                       sea_level_high_csv)
+        print('Reading csv')
+        df_high = pd.read_csv(sea_level_high_csv)
         print('Adjusting columns')
         df_high['SLR_high'] = df_high['ASLR']
         df_high = df_high[['GEOID', 'ALAND', 'SLR_high']]
@@ -251,7 +258,7 @@ if add_noaa_sea_level_rise is True:
     all_metrics += ['SLR']
 
 if add_first_street_flood is True:
-    print('\nProcessing First Street flood data')
+    print('\nADDING FIRST STREET FLOOD DATA')
     add_first_street_data(first_street_flood, 'flood', temp_csv)
     print('Merging with block group data')
     # Reread csv file
@@ -262,7 +269,7 @@ if add_first_street_flood is True:
     all_metrics += ['FLOOD']
 
 if add_first_street_heat is True:
-    print('\nProcessing first street heat data')
+    print('\nADDING FIRST STREET HEAT DATA')
     add_first_street_data(first_street_heat, 'heat', temp_csv)
     print('Merging with block group data')
     # Reread csv file
@@ -273,3 +280,96 @@ if add_first_street_heat is True:
     all_metrics += ['HEAT']
 
 # Step 4 ----
+print('\nCALCULATING PERCENTILES')
+if calculate_study_area_percentiles is True:
+    # Convert list to string with | (or) divider
+    study_areas = '|'.join(study_area_values)
+    print('Selecting study area tracts')
+    df_study_area = df_bg.loc[df_bg[study_area_column].str.contains(study_areas)]
+
+# Calc percentile for each variable
+for col in all_metrics:
+    print('Calculating percentiles for ' + col)
+    # Set variables
+    n_col = 'N_' + col
+    p_col = 'P_' + col
+
+    if col in inverse_metrics:
+        pct_ascending = False
+    else:
+        pct_ascending = True
+
+    print('\tAdding columns')
+    df_bg[['p_temp', p_col, n_col]] = [0, 0, 0]
+
+    if calculate_state_percentiles is True:
+        for state in state_list:
+            df_temp = df_bg.loc[df_bg['State'] == state]
+
+            print('\tCalculating ' + state + ' percentiles')
+            # Calc percentile, assign to p_temp
+            df_bg['p_temp'] = df_temp[col].rank(pct=True,
+                                                ascending=pct_ascending)
+            # Replace null values
+            df_bg['p_temp'].fillna(0, inplace=True)
+            # Multiply by 100, truncate
+            df_bg['p_temp'] = np.trunc(100 * df_bg['p_temp'])
+            # Add to p_col
+            df_bg[p_col] += df_bg['p_temp']
+        print('\tSetting percentile for rows with no data to null')
+        df_bg[p_col] = np.where(df_bg[col].isnull(), np.nan, df_bg[p_col])
+
+    if calculate_study_area_percentiles is True:
+        print('\tCalculating NBEP percentiles')
+        # Calc percentile
+        df_bg[n_col] = df_study_area[col].rank(pct=True,
+                                               ascending=pct_ascending)
+        # Multiply by 100, truncate
+        df_bg[n_col] = np.trunc(100*df_bg[n_col])
+
+print('Dropping extra columns')
+p_columns = ['P_' + x for x in all_metrics]
+n_columns = ['N_' + x for x in all_metrics]
+# Build list of col
+col_list = keep_fields + ['ACSTOTPOP'] + all_metrics + p_columns + n_columns
+# Drop all unlisted columns
+df_bg = df_bg[col_list]
+
+print('Adding new columns')
+df_bg['DataSource'] = data_source
+df_bg['SourceYear'] = source_year
+
+print('\nSAVING DATA')
+print('Saving csv')
+df_bg.to_csv(csv_output,
+             index=False,
+             na_rep='999999')
+
+print('Saving shapefile copy')
+arcpy.management.CopyFeatures(in_features=gis_block_groups,
+                              out_feature_class=gis_output)
+print('\tDropping all fields except GEOID')
+arcpy.management.DeleteField(in_table=gis_output,
+                             drop_field=['GEOID'],
+                             method='KEEP_FIELDS')
+print('\tAdding temp ID field (numeric)')
+# Add field
+arcpy.management.AddField(in_table=gis_output,
+                          field_name='temp_ID',
+                          field_type='DOUBLE')
+# Set Field to 'GEOID'
+arcpy.management.CalculateField(in_table=gis_output,
+                                field='temp_ID',
+                                expression='float(!GEOID!)')
+
+print('\tJoining csv to shapefile')
+# Join on temp_ID (integer) not ID (string) because tracts_int_csv drops the 0 at the start of each ID
+arcpy.management.JoinField(in_data=gis_output,
+                           in_field='temp_ID',
+                           join_table=csv_output,
+                           join_field='GEOID')
+
+print('\tDropping duplicate ID fields')
+arcpy.management.DeleteField(in_table=gis_output,
+                             drop_field=['GEOID_1', 'temp_ID']
+                             )
