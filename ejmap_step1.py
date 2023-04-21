@@ -1,7 +1,7 @@
 # ---------------------------------------------------------------------------
 # ejmap_step1.py
 # Authors: Mariel Sorlien
-# Last updated: 2023-04-19
+# Last updated: 2023-04-21
 # Python 3.7
 #
 # Description:
@@ -61,7 +61,7 @@ source_year = '2022; 2013, 2014, 2020; 2016, 2014; 2005, 2006; 2023; 2017'
 
 # Add towns
 if add_town_names is True:
-    print('\nAdding town names')
+    print('Adding town names')
     # Add spatial join
     block_group_spatial_join(gis_block_groups, gis_towns, gis_output)
     gis_block_groups = gis_output
@@ -80,6 +80,12 @@ if add_study_area is True:
     print('\nAdding study area names')
     # Add spatial join
     block_group_spatial_join(gis_block_groups, gis_study_area, gis_output)
+    print('Setting null values to "Outside Study Area"')
+    with arcpy.da.UpdateCursor(gis_output, study_area_columns) as cursor:
+        for row in cursor:
+            if row[0] == None or row[0] == '' or row[0] == ' ':
+                row[0] = "Outside Study Area"
+                cursor.updateRow(row)
     gis_block_groups = gis_output
     print('Updating column list')
     keep_fields += study_area_columns
