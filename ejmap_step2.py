@@ -1,7 +1,7 @@
 # ---------------------------------------------------------------------------
 # ejmap_step1.py
 # Authors: Mariel Sorlien
-# Last updated: 2023-04-20
+# Last updated: 2023-04-21
 # Python 3.7
 #
 # Description:
@@ -28,20 +28,24 @@ arcpy.env.overwriteOutput = True
 
 # Set workspace
 base_folder = os.getcwd()
+scratch_folder = arcpy.env.scratchFolder
 gis_folder = base_folder + '/gis_data/int_gisdata/ejmap_intdata.gdb'
 csv_folder = base_folder + '/tabular_data'
 
 # Set default projection
 arcpy.env.outputCoordinateSystem = arcpy.SpatialReference("NAD 1983 UTM Zone 19N")
 
-# Set variables
-state_list = ['Rhode Island', 'Connecticut', 'Massachusetts']
+# Set inputs
 gis_block_groups = gis_folder + '/MACTRI_block_groups'
 keep_fields = ['GEOID', 'Town', 'State', 'Study_Area', 'ALAND', 'AWATER']
 
 # Set outputs
 csv_output = csv_folder + '/block_groups_final.csv'
 gis_output = gis_folder + '/block_groups_final'
+
+# Set variables
+state_list = ['Rhode Island', 'Connecticut', 'Massachusetts']
+exclude_ocean_block_groups = True   # If true, drops all block groups with no land
 
 # ------------------------------ STEP 2 -------------------------------------
 # Add EPA data (MANDATORY)
@@ -127,12 +131,19 @@ source_year = '2016-2020, 2022; 2019, 2020; 2019; 2016; 2021; 2022; 2019'
 
 # Step 1 ----
 # Define extra variables
-block_groups_xls = arcpy.env.scratchFolder + '/block_groups.xls'
-temp_csv = arcpy.env.scratchFolder + '/temp_csv.csv'
-temp_excel = arcpy.env.scratchFolder + '/temp_excel.xls'
+block_groups_xls = scratch_folder + '/block_groups.xls'
+block_groups_clip = scratch_folder + '/block_groups_clip.shp'
+temp_csv = scratch_folder + '/temp_csv.csv'
+temp_excel = scratch_folder + '/temp_excel.xls'
 inverse_metrics = []  # List of metrics where higher values are better, not worse
 
 print('ADDING BLOCK GROUP DATA')
+if exclude_ocean_block_groups is True:
+    print('Dropping block groups with no land')
+    arcpy.analysis.Select(in_features=gis_block_groups,
+                          out_feature_class=block_groups_clip,
+                          where_clause="ALAND > 0")
+    gis_block_groups = block_groups_clip
 print('Exporting table to excel')
 arcpy.conversion.TableToExcel(gis_block_groups, block_groups_xls)
 print('Converting to dataframe')
@@ -343,16 +354,16 @@ print('\nSAVING DATA')
 print('Saving csv')
 df_bg.to_csv(csv_output,
              index=False,
-             na_rep='NoData')
+             na_rep='-999999')
 
 print('Saving shapefile copy')
 arcpy.management.CopyFeatures(in_features=gis_block_groups,
                               out_feature_class=gis_output)
-print('\tDropping all fields except GEOID')
+print('Dropping all fields except GEOID')
 arcpy.management.DeleteField(in_table=gis_output,
                              drop_field=['GEOID'],
                              method='KEEP_FIELDS')
-print('\tAdding temp ID field (numeric)')
+print('Adding temp ID field (numeric)')
 # Add field
 arcpy.management.AddField(in_table=gis_output,
                           field_name='temp_ID',
@@ -362,14 +373,16 @@ arcpy.management.CalculateField(in_table=gis_output,
                                 field='temp_ID',
                                 expression='float(!GEOID!)')
 
-print('\tJoining csv to shapefile')
+print('Joining csv to shapefile')
 # Join on temp_ID (integer) not ID (string) because tracts_int_csv drops the 0 at the start of each ID
 arcpy.management.JoinField(in_data=gis_output,
                            in_field='temp_ID',
                            join_table=csv_output,
                            join_field='GEOID')
-
-print('\tDropping duplicate ID fields')
+print('Dropping duplicate ID fields')
 arcpy.management.DeleteField(in_table=gis_output,
                              drop_field=['GEOID_1', 'temp_ID']
                              )
+
+print('\nDELETING SCRATCH FOLDER')
+arcpy.Delete_management(scratch_folder)

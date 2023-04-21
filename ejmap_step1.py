@@ -22,6 +22,7 @@ arcpy.env.overwriteOutput = True
 
 # Set workspace
 base_folder = os.getcwd()
+scratch_folder = arcpy.env.scratchFolder
 gis_folder = base_folder + '/gis_data/int_gisdata/ejmap_intdata.gdb'
 output_folder = base_folder + '/data'
 
@@ -99,3 +100,6 @@ arcpy.management.DeleteField(gis_output, keep_fields, 'KEEP_FIELDS')
 
 print('Adding columns (DataSource, SourceYear)')
 add_metadata_fields(gis_output, data_source, source_year)
+
+print('\nDeleting scratch folder')
+arcpy.Delete_management(scratch_folder)

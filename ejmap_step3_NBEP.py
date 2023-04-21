@@ -20,6 +20,7 @@ arcpy.env.overwriteOutput = True
 
 # Set workspace
 base_folder = os.getcwd()
+scratch_folder = arcpy.env.scratchFolder
 gis_folder = base_folder + '/gis_data/int_gisdata/ejmap_intdata.gdb'
 csv_folder = base_folder + '/tabular_data'
 
@@ -27,7 +28,7 @@ csv_folder = base_folder + '/tabular_data'
 arcpy.env.outputCoordinateSystem = arcpy.SpatialReference("NAD 1983 UTM Zone 19N")
 
 # Set inputs
-gis_block_groups = gis_folder + '/MACTRI_block_groups'
+gis_block_groups = gis_folder + '/block_groups_fixed'
 csv_block_groups = csv_folder + '/block_groups_final.csv'
 
 # Set outputs
@@ -51,15 +52,16 @@ print('Dropping extra columns, rows')
 # only keep selected rows
 df = df[['State', 'Town', 'Study_Area']]
 # drop rows that aren't in Study_Area (and therefor have NaN value)
-df = df.dropna()
+df_NBEP = df.loc[df['Study_Area'].isin(['Narragansett Bay Watershed', 'Little Narragansett Bay Watershed',
+                                        'Southwest Coastal Ponds Watershed'])]
 # drop duplicate rows
-df = df.drop_duplicates()
+df_NBEP = df_NBEP.drop_duplicates()
 print('Adding column (Town_Code)')
-df['Town_Code'] = df['STATE_NAME'] + df['Town_Name']
+df_NBEP['Town_Code'] = df_NBEP['State'] + df_NBEP['Town']
 print('Concatenating list of NBEP towns')
-town_list = df['Town_Code'].tolist()
+town_list = df_NBEP['Town_Code'].tolist()
 
-print('\nCopying shapefile')
+print('Copying shapefile')
 arcpy.management.CopyFeatures(in_features=gis_block_groups,
                               out_feature_class=gis_temp)
 print('Adding fields (Town_Code, NBEPYear)')
@@ -77,16 +79,16 @@ arcpy.management.CalculateFields(gis_temp,
                                      ['Town_Code', '!State! + !Town!'],
                                      ['NBEPYear', NBEP_year]
                                  ])
-print('Filtering data for NBEP towns, ALAND > 0')
+print('Filtering data for NBEP towns')
 arcpy.analysis.Select(in_features=gis_temp,
                       out_feature_class=gis_output,
-                      where_clause="Town_Code IN {0} And ALAND > 0".format(str(tuple(town_list)))
+                      where_clause="Town_Code IN {0}".format(str(tuple(town_list)))
                       )
 print('Dropping extra field (Town_Code)')
 arcpy.management.DeleteField(in_table=gis_output,
                              drop_field=['Town_Code'])
 
-print('\nAdding metadata')
+print('Adding metadata')
 # Create a new Metadata object and add some content to it
 new_md = md.Metadata()
 # Set title
@@ -107,6 +109,10 @@ new_md.description = 'Environmental justice metrics in the Narragansett Bay regi
                      'Prevention PLACES estimate, the National Landcover Database, the First Street Foundation, ' \
                      'and the National Oceanic and Atmospheric Administration. This data is intended for general ' \
                      'planning, graphic display, and GIS analysis.'
+# Set credits
+new_md.credits = 'U.S. Environmental Protection Agency Environmental Justice Screening and Mapping Tool (EJSCREEN); ' \
+                 'U.S. Center for Disease Control and Prevention PLACES estimate; National Land Cover Database; ' \
+                 'First Street Foundation; NOAA; Narragansett Bay Estuary Program'
 # Set constraints
 new_md.accessConstraints = 'This dataset is provided "as is". The producer(s) of this dataset, contributors ' \
                            'to this dataset, and the Narragansett Bay Estuary Program (NBEP) do not make any ' \
@@ -143,3 +149,6 @@ if not tgt_item_md.isReadOnly:
     tgt_item_md.save()
 else:
     print('\tError: Unable to add metadata')
+
+print('Deleting scratch folder')
+arcpy.Delete_management(scratch_folder)
