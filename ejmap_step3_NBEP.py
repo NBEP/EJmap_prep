@@ -25,7 +25,7 @@ gis_folder = base_folder + '/gis_data/int_gisdata/ejmap_intdata.gdb'
 csv_folder = base_folder + '/tabular_data'
 
 # Set default projection
-arcpy.env.outputCoordinateSystem = arcpy.SpatialReference("NAD 1983 UTM Zone 19N")
+arcpy.env.outputCoordinateSystem = arcpy.SpatialReference('NAD 1983 UTM Zone 19N')
 
 # Set inputs
 gis_block_groups = gis_folder + '/block_groups_fixed'
@@ -47,13 +47,18 @@ gis_temp = arcpy.env.scratchFolder + '/temp_file.shp'
 # Run script
 print('Listing NBEP towns')
 print('Opening csv')
-df = pd.read_csv(csv_block_groups, sep=",")
+df = pd.read_csv(csv_block_groups, sep=',')
 print('Dropping extra columns, rows')
 # only keep selected rows
 df = df[['State', 'Town', 'Study_Area']]
 # drop rows that aren't in Study_Area (and therefor have NaN value)
-df_NBEP = df.loc[df['Study_Area'].isin(['Narragansett Bay Watershed', 'Little Narragansett Bay Watershed',
-                                        'Southwest Coastal Ponds Watershed'])]
+df_NBEP = df.loc[
+    df['Study_Area'].isin([
+        'Narragansett Bay Watershed',
+        'Little Narragansett Bay Watershed',
+        'Southwest Coastal Ponds Watershed'
+    ])
+]
 # drop duplicate rows
 df_NBEP = df_NBEP.drop_duplicates()
 print('Adding column (Town_Code)')
@@ -65,28 +70,35 @@ print('Copying shapefile')
 arcpy.management.CopyFeatures(in_features=gis_block_groups,
                               out_feature_class=gis_temp)
 print('Adding fields (Town_Code, NBEPYear)')
-arcpy.management.AddFields(gis_temp,
-                           [
-                               # Field name, field type, field alias, field length, default value
-                               ['Town_Code', 'TEXT', 'DataSource', 100],
-                               ['NBEPYear', 'SHORT']
-                           ])
+arcpy.management.AddFields(
+    gis_temp,
+    [
+        # Field name, field type, field alias, field length, default value
+        ['Town_Code', 'TEXT', 'DataSource', 100],
+        ['NBEPYear', 'SHORT']
+    ]
+)
 
 print('\tCalculating fields')
-arcpy.management.CalculateFields(gis_temp,
-                                 "PYTHON3",
-                                 [
-                                     ['Town_Code', '!State! + !Town!'],
-                                     ['NBEPYear', NBEP_year]
-                                 ])
+arcpy.management.CalculateFields(
+    gis_temp,
+    'PYTHON3',
+    [
+        ['Town_Code', '!State! + !Town!'],
+        ['NBEPYear', NBEP_year]
+    ]
+)
 print('Filtering data for NBEP towns')
-arcpy.analysis.Select(in_features=gis_temp,
-                      out_feature_class=gis_output,
-                      where_clause="Town_Code IN {0}".format(str(tuple(town_list)))
-                      )
+arcpy.analysis.Select(
+    in_features=gis_temp,
+    out_feature_class=gis_output,
+    where_clause='Town_Code IN {0}'.format(str(tuple(town_list)))
+)
 print('Dropping extra field (Town_Code)')
-arcpy.management.DeleteField(in_table=gis_output,
-                             drop_field=['Town_Code'])
+arcpy.management.DeleteField(
+    in_table=gis_output,
+    drop_field=['Town_Code']
+)
 
 print('Adding metadata')
 # Create a new Metadata object and add some content to it
@@ -102,10 +114,12 @@ new_md.summary = 'Environmental justice metrics in the Narragansett Bay region d
                  'graphic display, and GIS analysis.'
 # Set description
 new_md.description = 'Environmental justice metrics in the Narragansett Bay region derived from the ' \
-                     'U.S. EPA (EPA) EJSCREEN dataset (EPA ' + str(EPA_year) + \
-                     '). EJSCREEN provides population demographics and other information at the U.S. Census ' \
-                     '"block group" scale (American Community Survey ' + str(ACS_year) + \
-                     '). EJSCREEN data was supplemented with data from the U.S. Center for Disease Control and ' \
+                     'U.S. EPA (EPA) EJSCREEN dataset (EPA ' \
+                     + str(EPA_year) \
+                     + '). EJSCREEN provides population demographics and other information at the U.S. Census ' \
+                     '"block group" scale (American Community Survey ' \
+                     + str(ACS_year) \
+                     + '). EJSCREEN data was supplemented with data from the U.S. Center for Disease Control and ' \
                      'Prevention PLACES estimate, the National Landcover Database, the First Street Foundation, ' \
                      'and the National Oceanic and Atmospheric Administration. This data is intended for general ' \
                      'planning, graphic display, and GIS analysis.'
@@ -135,8 +149,9 @@ new_md.accessConstraints = 'This dataset is provided "as is". The producer(s) of
                            'This project was funded by agreements by the Environmental Protection Agency (EPA) to ' \
                            'Roger Williams University (RWU) in partnership with the Narragansett Bay Estuary ' \
                            'Program. Although the information in this document has been funded wholly or in part by ' \
-                           'EPA under the agreements ' + EPA_agreements + \
-                           ' to RWU, it has not undergone the Agency’s publications review process and therefore, ' \
+                           'EPA under the agreements ' \
+                           + EPA_agreements \
+                           + ' to RWU, it has not undergone the Agency’s publications review process and therefore, ' \
                            'may not necessarily reflect the views of the Agency and no official endorsement should ' \
                            'be inferred. The viewpoints expressed here do not necessarily represent those of the ' \
                            'Narragansett Bay Estuary Program, RWU, or EPA nor does mention of trade names, ' \

@@ -27,7 +27,7 @@ gis_folder = base_folder + '/gis_data/int_gisdata/ejmap_intdata.gdb'
 output_folder = base_folder + '/data'
 
 # Set default projection
-arcpy.env.outputCoordinateSystem = arcpy.SpatialReference("NAD 1983 UTM Zone 19N")
+arcpy.env.outputCoordinateSystem = arcpy.SpatialReference('NAD 1983 UTM Zone 19N')
 
 # Set inputs
 gis_block_groups = gis_folder + '/source_data/block_groups'
@@ -84,8 +84,8 @@ if add_study_area is True:
     print('Setting null values to "Outside Study Area"')
     with arcpy.da.UpdateCursor(gis_output, study_area_columns) as cursor:
         for row in cursor:
-            if row[0] == None or row[0] == '' or row[0] == ' ':
-                row[0] = "Outside Study Area"
+            if row[0] is None or row[0] == '' or row[0] == ' ':
+                row[0] = 'Outside Study Area'
                 cursor.updateRow(row)
     gis_block_groups = gis_output
     print('Updating column list')

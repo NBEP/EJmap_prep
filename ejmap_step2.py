@@ -1,7 +1,7 @@
 # ---------------------------------------------------------------------------
-# ejmap_step1.py
+# ejmap_step2.py
 # Authors: Mariel Sorlien
-# Last updated: 2023-04-21
+# Last updated: 2023-05-03
 # Python 3.7
 #
 # Description:
@@ -33,7 +33,7 @@ gis_folder = base_folder + '/gis_data/int_gisdata/ejmap_intdata.gdb'
 csv_folder = base_folder + '/tabular_data'
 
 # Set default projection
-arcpy.env.outputCoordinateSystem = arcpy.SpatialReference("NAD 1983 UTM Zone 19N")
+arcpy.env.outputCoordinateSystem = arcpy.SpatialReference('NAD 1983 UTM Zone 19N')
 
 # Set inputs
 gis_block_groups = gis_folder + '/MACTRI_block_groups'
@@ -51,22 +51,25 @@ exclude_ocean_block_groups = True   # If true, drops all block groups with no la
 # Add EPA data (MANDATORY)
 
 # Set variables
-epa_csv = csv_folder + "/source_data/EJSCREEN_2022_StatePct_with_AS_CNMI_GU_VI.csv"
+epa_csv = csv_folder + '/source_data/EJSCREEN_2022_Supplemental_StatePct_with_AS_CNMI_GU_VI'
 
 # List metrics
-epa_metrics = ['MINORPCT', 'LOWINCPCT', 'UNEMPPCT', 'LINGISOPCT', 'LESSHSPCT',
-               'UNDER5PCT', 'OVER64PCT', 'PM25', 'OZONE', 'DSLPM', 'PTRAF',
-               'PRE1960PCT', 'PNPL', 'PRMP', 'PTSDF', 'UST', 'PWDIS']
+epa_metrics = [
+    'MINORPCT', 'LOWINCPCT', 'UNEMPPCT', 'LINGISOPCT', 'LESSHSPCT', 'UNDER5PCT', 'OVER64PCT', 'LIFEEXPCT', 'PM25',
+    'OZONE', 'DSLPM', 'CANCER', 'RESP', 'PTRAF', 'PRE1960PCT', 'PNPL', 'PRMP', 'PTSDF', 'UST', 'PWDIS'
+]
 
 # Rename metrics. Must be 8 characters max.
 # old name: new name
-rename_epa_metrics = {'LOWINCPCT': 'LWINCPCT',
-                      'LESSHSPCT': 'LESHSPCT',
-                      'LINGISOPCT': 'LNGISPCT',
-                      'UNDER5PCT': 'UNDR5PCT',
-                      'OVER64PCT': 'OVR64PCT',
-                      'PRE1960PCT': 'LDPNT'
-                      }
+rename_epa_metrics = {
+    'LOWINCPCT': 'LWINCPCT',
+    'LESSHSPCT': 'LESHSPCT',
+    'LINGISOPCT': 'LNGISPCT',
+    'UNDER5PCT': 'UNDR5PCT',
+    'OVER64PCT': 'OVR64PCT',
+    'LIFEEXPCT': 'LIFEEXPT',
+    'PRE1960PCT': 'LDPNT'
+}
 
 # ------------------------------ STEP 3 -------------------------------------
 # Add supplemental datasets
@@ -102,17 +105,19 @@ sea_level_high_csv = csv_folder + '/int_data/noaa_slr_2ft.csv'
 
 # Set variables
 sea_level_rise_depth_ft = 1.6
-cdc_metrics = ['CASTHMA_CrudePrev', 'BPHIGH_CrudePrev', 'CANCER_CrudePrev',
-               'DIABETES_CrudePrev', 'MHLTH_CrudePrev']
+cdc_metrics = [
+    'CASTHMA_CrudePrev', 'BPHIGH_CrudePrev', 'CANCER_CrudePrev', 'DIABETES_CrudePrev', 'MHLTH_CrudePrev'
+]
 
 # Set new variable names. Must be 8 characters max.
 # old name: new name
-rename_cdc_metrics = {'CASTHMA_CrudePrev': 'ASTHMA',
-                      'BPHIGH_CrudePrev': 'BPHIGH',
-                      'CANCER_CrudePrev': 'CANCER',
-                      'DIABETES_CrudePrev': 'DIABE',
-                      'MHLTH_CrudePrev': 'MHEALTH'
-                      }
+rename_cdc_metrics = {
+    'CASTHMA_CrudePrev': 'ASTHMA',
+    'BPHIGH_CrudePrev': 'BPHIGH',
+    'CANCER_CrudePrev': 'CANCER_2',
+    'DIABETES_CrudePrev': 'DIABE',
+    'MHLTH_CrudePrev': 'MHEALTH'
+}
 
 # ------------------------------ STEP 4 -------------------------------------
 # Calculate percentiles, add metadata
@@ -121,8 +126,11 @@ calculate_state_percentiles = True
 calculate_study_area_percentiles = True
 
 study_area_column = 'Study_Area'
-study_area_values = ['Narragansett Bay Watershed', 'Little Narragansett Bay Watershed',
-                     'Southwest Coastal Ponds Watershed']
+study_area_values = [
+    'Narragansett Bay Watershed',
+    'Little Narragansett Bay Watershed',
+    'Southwest Coastal Ponds Watershed'
+]
 
 data_source = 'EPA; CDC; NLCD; NLCD, USFS; RIGIS; First Street; NOAA'
 source_year = '2016-2020, 2022; 2019, 2020; 2019; 2016; 2021; 2022; 2019'
@@ -140,9 +148,11 @@ inverse_metrics = []  # List of metrics where higher values are better, not wors
 print('ADDING BLOCK GROUP DATA')
 if exclude_ocean_block_groups is True:
     print('Dropping block groups with no land')
-    arcpy.analysis.Select(in_features=gis_block_groups,
-                          out_feature_class=block_groups_clip,
-                          where_clause="ALAND > 0")
+    arcpy.analysis.Select(
+        in_features=gis_block_groups,
+        out_feature_class=block_groups_clip,
+        where_clause='ALAND > 0'
+    )
     gis_block_groups = block_groups_clip
 print('Exporting table to excel')
 arcpy.conversion.TableToExcel(gis_block_groups, block_groups_xls)
@@ -158,12 +168,14 @@ df_bg['Tract_ID'] = df_bg['Tract_ID'].astype(float)
 # Step 2 ----
 print('\nADDING EPA DATA')
 # Import csv, drop extra data, rename columns, save as temp  csv
-add_csv_dataset(epa_csv, epa_metrics, rename_epa_metrics,
-                ['ID', 'STATE_NAME', 'ACSTOTPOP'],
-                state_list, 'STATE_NAME', temp_csv)
+add_csv_dataset(
+    epa_csv, epa_metrics, rename_epa_metrics,
+    ['ID', 'STATE_NAME', 'ACSTOTPOP'],
+    state_list, 'STATE_NAME', temp_csv
+)
 print('Merging with block group data')
 # Reread csv file
-df_epa = pd.read_csv(temp_csv, sep=",")
+df_epa = pd.read_csv(temp_csv, sep=',')
 # Merge to block group data
 df_bg = pd.merge(df_bg, df_epa, left_on='GEOID', right_on='ID', how='left')
 print('Adding variable names to list')
@@ -173,12 +185,14 @@ all_metrics = list(map(rename_epa_metrics.get, epa_metrics, epa_metrics))
 if add_cdc is True:
     print('\nADDING CDC DATA')
     # Import csv, drop extra data, rename columns, save as temp  csv
-    add_csv_dataset(cdc_csv, cdc_metrics, rename_cdc_metrics,
-                    ['TractFIPS', 'StateDesc'],
-                    state_list, 'StateDesc', temp_csv)
+    add_csv_dataset(
+        cdc_csv, cdc_metrics, rename_cdc_metrics,
+        ['TractFIPS', 'StateDesc'],
+        state_list, 'StateDesc', temp_csv
+    )
     print('Merging with block group data')
     # Reread csv file
-    df_cdc = pd.read_csv(temp_csv, sep=",")
+    df_cdc = pd.read_csv(temp_csv, sep=',')
     # Merge to block group data
     df_bg = pd.merge(df_bg, df_cdc, left_on='Tract_ID', right_on='TractFIPS', how='left')
     print('Adding variable names to list')
@@ -193,7 +207,7 @@ if add_nlcd_tree is True:
     process_raster_csv(tree_csv, df_bg, 'TREE', temp_csv)
     print('Merging with block group data')
     # Reread csv file
-    df_tree = pd.read_csv(temp_csv, sep=",")
+    df_tree = pd.read_csv(temp_csv, sep=',')
     # Merge to block group data
     df_bg = pd.merge(df_bg, df_tree, on=['GEOID'], how='left')
     print('Adding variable names to list')
@@ -209,7 +223,7 @@ if add_nlcd_impervious_surface is True:
     process_raster_csv(impervious_surface_csv, df_bg, 'IMPER', temp_csv)
     print('Merging with block group data')
     # Reread csv file
-    df_imper = pd.read_csv(temp_csv, sep=",")
+    df_imper = pd.read_csv(temp_csv, sep=',')
     # Merge to block group data
     df_bg = pd.merge(df_bg, df_imper, on=['GEOID'], how='left')
     print('Adding variable names to list')
@@ -273,7 +287,7 @@ if add_first_street_flood is True:
     add_first_street_data(first_street_flood, 'flood', temp_csv)
     print('Merging with block group data')
     # Reread csv file
-    df_flood = pd.read_csv(temp_csv, sep=",")
+    df_flood = pd.read_csv(temp_csv, sep=',')
     # Merge to block group data
     df_bg = pd.merge(df_bg, df_flood, on=['Tract_ID'], how='left')
     print('Adding variable names to list')
@@ -284,7 +298,7 @@ if add_first_street_heat is True:
     add_first_street_data(first_street_heat, 'heat', temp_csv)
     print('Merging with block group data')
     # Reread csv file
-    df_heat = pd.read_csv(temp_csv, sep=",")
+    df_heat = pd.read_csv(temp_csv, sep=',')
     # Merge to block group data
     df_bg = pd.merge(df_bg, df_heat, on=['Tract_ID'], how='left')
     print('Adding variable names to list')
@@ -368,7 +382,7 @@ print('Adding temp ID field (numeric)')
 arcpy.management.AddField(in_table=gis_output,
                           field_name='temp_ID',
                           field_type='DOUBLE')
-# Set Field to 'GEOID'
+# Set Field to "GEOID"
 arcpy.management.CalculateField(in_table=gis_output,
                                 field='temp_ID',
                                 expression='float(!GEOID!)')
