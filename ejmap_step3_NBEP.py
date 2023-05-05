@@ -92,6 +92,12 @@ arcpy.analysis.Select(
     where_clause='Town_Code IN {0}'.format(str(tuple(town_list)))
 )
 
+print('Dropping extra field (Town_Code)')
+arcpy.management.DeleteField(
+    in_table=gis_output,
+    drop_field=['Town_Code']
+)
+
 print('Adding metadata')
 # Create a new Metadata object and add some content to it
 new_md = md.Metadata()
