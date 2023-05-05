@@ -1,7 +1,7 @@
 # ---------------------------------------------------------------------------
 # ejmap_step2.py
 # Authors: Mariel Sorlien
-# Last updated: 2023-05-03
+# Last updated: 2023-05-05
 # Python 3.7
 #
 # Description:
@@ -37,7 +37,7 @@ arcpy.env.outputCoordinateSystem = arcpy.SpatialReference('NAD 1983 UTM Zone 19N
 
 # Set inputs
 gis_block_groups = gis_folder + '/MACTRI_block_groups'
-keep_fields = ['GEOID', 'Town', 'State', 'Study_Area', 'ALAND', 'AWATER']
+keep_fields = ['GEOID', 'Town', 'State', 'HUC10', 'HUC10_Name', 'Study_Area', 'ALAND', 'AWATER']
 
 # Set outputs
 csv_output = csv_folder + '/block_groups_final.csv'
@@ -51,7 +51,7 @@ exclude_ocean_block_groups = True   # If true, drops all block groups with no la
 # Add EPA data (MANDATORY)
 
 # Set variables
-epa_csv = csv_folder + '/source_data/EJSCREEN_2022_Supplemental_StatePct_with_AS_CNMI_GU_VI'
+epa_csv = csv_folder + '/source_data/EJSCREEN_2022_Supplemental_StatePct_with_AS_CNMI_GU_VI.csv'
 
 # List metrics
 epa_metrics = [

@@ -1,7 +1,7 @@
 # ---------------------------------------------------------------------------
 # ejmap_step3_NBEP.py
 # Authors: Mariel Sorlien
-# Last updated: 2023-04-21
+# Last updated: 2023-05-05
 # Python 3.7
 #
 # Description:
@@ -28,16 +28,18 @@ csv_folder = base_folder + '/tabular_data'
 arcpy.env.outputCoordinateSystem = arcpy.SpatialReference('NAD 1983 UTM Zone 19N')
 
 # Set inputs
-gis_block_groups = gis_folder + '/block_groups_fixed'
+gis_block_groups = gis_folder + '/block_groups_final'
 csv_block_groups = csv_folder + '/block_groups_final.csv'
+gis_state_boundaries = gis_folder + '/towns'
 
 # Set outputs
 gis_output = gis_folder + '/EJMETRICS_2022_NBEP2023'
+gis_output_lowres = gis_folder + '/EJMETRICS_2022_LOWRES_NBEP2023'
 
 # Set variables
 NBEP_year = 2023
 EPA_year = 2022
-ACS_year = 2018
+ACS_year = 2020
 EPA_agreements = 'CE00A00967'
 
 # ------------------------------ SCRIPT -------------------------------------
@@ -49,16 +51,11 @@ print('Listing NBEP towns')
 print('Opening csv')
 df = pd.read_csv(csv_block_groups, sep=',')
 print('Dropping extra columns, rows')
-# only keep selected rows
+# only keep selected columns
 df = df[['State', 'Town', 'Study_Area']]
 # drop rows that aren't in Study_Area (and therefor have NaN value)
 df_NBEP = df.loc[
-    df['Study_Area'].isin([
-        'Narragansett Bay Watershed',
-        'Little Narragansett Bay Watershed',
-        'Southwest Coastal Ponds Watershed'
-    ])
-]
+    df['Study_Area'] != 'Outside Study Area']
 # drop duplicate rows
 df_NBEP = df_NBEP.drop_duplicates()
 print('Adding column (Town_Code)')
@@ -66,7 +63,7 @@ df_NBEP['Town_Code'] = df_NBEP['State'] + df_NBEP['Town']
 print('Concatenating list of NBEP towns')
 town_list = df_NBEP['Town_Code'].tolist()
 
-print('Copying shapefile')
+print('\nCopying shapefile')
 arcpy.management.CopyFeatures(in_features=gis_block_groups,
                               out_feature_class=gis_temp)
 print('Adding fields (Town_Code, NBEPYear)')
@@ -93,11 +90,6 @@ arcpy.analysis.Select(
     in_features=gis_temp,
     out_feature_class=gis_output,
     where_clause='Town_Code IN {0}'.format(str(tuple(town_list)))
-)
-print('Dropping extra field (Town_Code)')
-arcpy.management.DeleteField(
-    in_table=gis_output,
-    drop_field=['Town_Code']
 )
 
 print('Adding metadata')
@@ -165,5 +157,18 @@ if not tgt_item_md.isReadOnly:
 else:
     print('\tError: Unable to add metadata')
 
-print('Deleting scratch folder')
+print('\nCreating low resolution display map for leaflet')
+print('Clipping to state coastline')
+arcpy.analysis.Clip(
+    in_features=gis_output,
+    clip_features=gis_state_boundaries,
+    out_feature_class=gis_temp)
+print('Simplifying polygons (500m)')
+arcpy.cartography.SimplifyPolygon(
+    in_features=gis_temp,
+    out_feature_class=gis_output_lowres,
+    algorithm='POINT_REMOVE',
+    tolerance=500)
+
+print('\nDeleting scratch folder')
 arcpy.Delete_management(scratch_folder)

@@ -1,7 +1,7 @@
 # ---------------------------------------------------------------------------
 # ejmap_step1.py
 # Authors: Mariel Sorlien
-# Last updated: 2023-04-21
+# Last updated: 2023-05-05
 # Python 3.7
 #
 # Description:
@@ -14,6 +14,7 @@ import os
 
 from functions.add_metadata import add_metadata_fields
 from functions.refine_block_groups import block_group_spatial_join
+from functions.replace_null_gis import replace_null_in_field
 
 arcpy.env.overwriteOutput = True
 
@@ -52,6 +53,12 @@ watershed_columns = ['huc10', 'name']
 gis_study_area = gis_folder + '/source_data/NBEP_study_areas'
 study_area_columns = ['Study_Area']
 
+# Change column names --- old columns: new column
+new_column_names = {
+    'huc10': 'HUC10',
+    'name': 'HUC10_Name'
+}
+
 # ------------------------------ STEP 3 -------------------------------------
 # Add metadata (mandatory)
 
@@ -64,7 +71,13 @@ source_year = '2022; 2013, 2014, 2020; 2016, 2014; 2005, 2006; 2023; 2017'
 if add_town_names is True:
     print('Adding town names')
     # Add spatial join
-    block_group_spatial_join(gis_block_groups, gis_towns, gis_output)
+    block_group_spatial_join(gis_block_groups, gis_towns, '', gis_output)
+    # Replace null/blank values
+    replace_null_in_field(
+        in_table=gis_output,
+        fields=town_columns,
+        new_text='No Data')
+    # Update gis_block_groups
     gis_block_groups = gis_output
     print('Updating column list')
     keep_fields += town_columns
@@ -72,7 +85,8 @@ if add_town_names is True:
 if add_watershed_names is True:
     print('\nAdding watershed names')
     # Add spatial join
-    block_group_spatial_join(gis_block_groups, gis_watersheds, gis_output)
+    block_group_spatial_join(gis_block_groups, gis_watersheds, watershed_columns, gis_output)
+    # Update gis_block_groups
     gis_block_groups = gis_output
     print('Updating column list')
     keep_fields += watershed_columns
@@ -80,13 +94,13 @@ if add_watershed_names is True:
 if add_study_area is True:
     print('\nAdding study area names')
     # Add spatial join
-    block_group_spatial_join(gis_block_groups, gis_study_area, gis_output)
-    print('Setting null values to "Outside Study Area"')
-    with arcpy.da.UpdateCursor(gis_output, study_area_columns) as cursor:
-        for row in cursor:
-            if row[0] is None or row[0] == '' or row[0] == ' ':
-                row[0] = 'Outside Study Area'
-                cursor.updateRow(row)
+    block_group_spatial_join(gis_block_groups, gis_study_area, study_area_columns, gis_output)
+    # Replace null/blank values
+    replace_null_in_field(
+        in_table=gis_output,
+        fields=study_area_columns,
+        new_text='Outside Study Area')
+    # Update gis_block_groups
     gis_block_groups = gis_output
     print('Updating column list')
     keep_fields += study_area_columns
@@ -97,6 +111,15 @@ if gis_block_groups != gis_output:
 
 print('\nDropping extra columns')
 arcpy.management.DeleteField(gis_output, keep_fields, 'KEEP_FIELDS')
+
+if len(new_column_names) > 0:
+    print('Renaming columns')
+    for old_name, new_name in new_column_names.items():
+        arcpy.management.AlterField(
+            in_table=gis_output,
+            field=old_name,
+            new_field_name=new_name,
+            new_field_alias=new_name)
 
 print('Adding columns (DataSource, SourceYear)')
 add_metadata_fields(gis_output, data_source, source_year)
