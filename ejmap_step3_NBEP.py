@@ -167,7 +167,7 @@ print('Simplifying polygons (500m)')
 arcpy.cartography.SimplifyPolygon(
     in_features=gis_temp,
     out_feature_class=gis_output_lowres,
-    algorithm='POINT_REMOVE',
+    algorithm='BEND_SIMPLIFY',
     tolerance=500)
 
 print('\nDeleting scratch folder')
