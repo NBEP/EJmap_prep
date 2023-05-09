@@ -29,6 +29,7 @@ arcpy.env.outputCoordinateSystem = arcpy.SpatialReference('NAD 1983 UTM Zone 19N
 
 # Set inputs
 gis_block_groups = gis_folder + '/block_groups_final'
+gis_block_groups_lowres = gis_folder + '/NBEP_block_groups_simplify_500m'
 csv_block_groups = csv_folder + '/block_groups_final.csv'
 gis_state_boundaries = gis_folder + '/towns'
 
@@ -164,17 +165,40 @@ else:
     print('\tError: Unable to add metadata')
 
 print('\nCreating low resolution display map for leaflet')
-print('Clipping to state coastline')
-arcpy.analysis.Clip(
-    in_features=gis_output,
-    clip_features=gis_state_boundaries,
-    out_feature_class=gis_temp)
-print('Simplifying polygons (500m)')
-arcpy.cartography.SimplifyPolygon(
-    in_features=gis_temp,
-    out_feature_class=gis_output_lowres,
-    algorithm='BEND_SIMPLIFY',
-    tolerance=500)
+print('Saving shapefile copy')
+arcpy.management.CopyFeatures(in_features=gis_block_groups_lowres,
+                              out_feature_class=gis_output_lowres)
+print('Dropping all fields except GEOID')
+arcpy.management.DeleteField(in_table=gis_output_lowres,
+                             drop_field=['GEOID'],
+                             method='KEEP_FIELDS')
+print('Adding temp ID field (numeric)')
+# Add field
+arcpy.management.AddField(in_table=gis_output_lowres,
+                          field_name='temp_ID',
+                          field_type='DOUBLE')
+# Set Field to "GEOID"
+arcpy.management.CalculateField(in_table=gis_output_lowres,
+                                field='temp_ID',
+                                expression='float(!GEOID!)')
+print('Joining csv to shapefile')
+# Join on temp_ID (integer) not ID (string) because tracts_int_csv drops the 0 at the start of each ID
+arcpy.management.JoinField(in_data=gis_output_lowres,
+                           in_field='temp_ID',
+                           join_table=csv_block_groups,
+                           join_field='GEOID')
+print('Dropping duplicate ID fields')
+arcpy.management.DeleteField(in_table=gis_output_lowres,
+                             drop_field=['GEOID_1', 'temp_ID']
+                             )
+print('Adding metadata')
+tgt_item_md = md.Metadata(gis_output_lowres)
+if not tgt_item_md.isReadOnly:
+    tgt_item_md.copy(new_md)
+    tgt_item_md.save()
+else:
+    print('\tError: Unable to add metadata')
+
 
 print('\nDeleting scratch folder')
 arcpy.Delete_management(scratch_folder)
