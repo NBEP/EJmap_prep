@@ -1,7 +1,7 @@
 # ---------------------------------------------------------------------------
 # ejmap_step2.py
 # Authors: Mariel Sorlien
-# Last updated: 2023-05-05
+# Last updated: 2023-07-10
 # Python 3.7
 #
 # Description:
@@ -51,23 +51,25 @@ exclude_ocean_block_groups = True   # If true, drops all block groups with no la
 # Add EPA data (MANDATORY)
 
 # Set variables
-epa_csv = csv_folder + '/source_data/EJSCREEN_2022_Supplemental_StatePct_with_AS_CNMI_GU_VI.csv'
+epa_csv = csv_folder + '/source_data/EJSCREEN_2023_BG_StatePct_with_AS_CNMI_GU_VI.csv'
 
 # List metrics
 epa_metrics = [
-    'MINORPCT', 'LOWINCPCT', 'UNEMPPCT', 'LINGISOPCT', 'LESSHSPCT', 'UNDER5PCT', 'OVER64PCT', 'LIFEEXPCT', 'PM25',
-    'OZONE', 'DSLPM', 'CANCER', 'RESP', 'PTRAF', 'PRE1960PCT', 'PNPL', 'PRMP', 'PTSDF', 'UST', 'PWDIS'
+    'PEOPCOLORPCT', 'LOWINCPCT', 'UNEMPPCT', 'LINGISOPCT', 'LESSHSPCT', 'UNDER5PCT', 'OVER64PCT', 'LIFEEXPPCT', 'PM25',
+    'OZONE', 'DSLPM', 'CANCER', 'RESP', 'RSEI_AIR', 'PTRAF', 'PRE1960PCT', 'PNPL', 'PRMP', 'PTSDF', 'UST', 'PWDIS'
 ]
 
 # Rename metrics. Must be 8 characters max.
 # old name: new name
 rename_epa_metrics = {
+    'PEOPCOLORPCT': 'POCPCT',
     'LOWINCPCT': 'LWINCPCT',
     'LESSHSPCT': 'LESHSPCT',
     'LINGISOPCT': 'LNGISPCT',
     'UNDER5PCT': 'UNDR5PCT',
     'OVER64PCT': 'OVR64PCT',
-    'LIFEEXPCT': 'LIFEEXPT',
+    'LIFEEXPPCT': 'LIFEEXPT',
+    'RSEI_AIR': 'RSEIAIR',
     'PRE1960PCT': 'LDPNT'
 }
 
@@ -89,7 +91,7 @@ skip_to_sea_level_csv = False
 
 # List inputs
 cdc_csv = csv_folder + '/source_data/PLACES__Census_Tract_Data__GIS_Friendly_Format___2022_release.csv'
-tree_raster = gis_folder + '/nlcd_2016_treecanopy'
+tree_raster = gis_folder + '/nlcd_2021_treecanopy'
 impervious_surface_raster = gis_folder + '/nlcd_2019_impervious'
 noaa_sea_level_rise_0ft = gis_folder + '/source_data/noaa_slr_depth_0ft'
 noaa_sea_level_rise_low = gis_folder + '/source_data/noaa_slr_depth_1ft'  # Target sea level rise rounded down
@@ -133,7 +135,7 @@ study_area_values = [
 ]
 
 data_source = 'EPA; CDC; NLCD; NLCD, USFS; RIGIS; First Street; NOAA'
-source_year = '2016-2020, 2022; 2019, 2020; 2019; 2016; 2021; 2022; 2019'
+source_year = '2017-2022, 2022; 2019, 2020; 2019; 2021; 2021; 2022; 2019'
 
 # ---------------------------- RUN SCRIPT -----------------------------------
 

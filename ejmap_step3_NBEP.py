@@ -34,13 +34,13 @@ csv_block_groups = csv_folder + '/block_groups_final.csv'
 gis_state_boundaries = gis_folder + '/towns'
 
 # Set outputs
-gis_output = gis_folder + '/EJMETRICS_2022_NBEP2023'
-gis_output_lowres = gis_folder + '/EJMETRICS_2022_LOWRES_NBEP2023'
+gis_output = gis_folder + '/EJMETRICS_2023_NBEP2023'
+gis_output_lowres = gis_folder + '/EJMETRICS_2023_LOWRES_NBEP2023'
 
 # Set variables
 NBEP_year = 2023
-EPA_year = 2022
-ACS_year = 2020
+EPA_year = 2023
+ACS_year = 2021
 EPA_agreements = 'CE00A00967'
 
 # ------------------------------ SCRIPT -------------------------------------
