@@ -1,7 +1,7 @@
 # ---------------------------------------------------------------------------
 # ejmap_step2.py
 # Authors: Mariel Sorlien
-# Last updated: 2023-07-10
+# Last updated: 2023-08-16
 # Python 3.7
 #
 # Description:
@@ -92,21 +92,21 @@ skip_to_sea_level_csv = False
 # List inputs
 cdc_csv = csv_folder + '/source_data/PLACES__Census_Tract_Data__GIS_Friendly_Format___2022_release.csv'
 tree_raster = gis_folder + '/nlcd_2021_treecanopy'
-impervious_surface_raster = gis_folder + '/nlcd_2019_impervious'
+impervious_surface_raster = gis_folder + '/nlcd_2021_impervious'
 noaa_sea_level_rise_0ft = gis_folder + '/source_data/noaa_slr_depth_0ft'
-noaa_sea_level_rise_low = gis_folder + '/source_data/noaa_slr_depth_1ft'  # Target sea level rise rounded down
-noaa_sea_level_rise_high = gis_folder + '/source_data/noaa_slr_depth_2ft'  # Target sea level rise rounded up
+noaa_sea_level_rise_low = gis_folder + '/source_data/noaa_slr_depth_0ft'  # Target sea level rise rounded down
+noaa_sea_level_rise_high = gis_folder + '/source_data/noaa_slr_depth_1ft'  # Target sea level rise rounded up
 first_street_flood = csv_folder + '/source_data/flood_v2.1_summary_fsf_flood_tract_summary.csv'
 first_street_heat = csv_folder + '/source_data/heat_v1.1_summary_fsf_heat_tract_summary.csv'
 
 # List outputs
 tree_csv = csv_folder + '/int_data/nlcd_tree.csv'
 impervious_surface_csv = csv_folder + '/int_data/nlcd_impervious.csv'
-sea_level_low_csv = csv_folder + '/int_data/noaa_slr_1ft.csv'
-sea_level_high_csv = csv_folder + '/int_data/noaa_slr_2ft.csv'
+sea_level_low_csv = csv_folder + '/int_data/noaa_slr_0ft.csv'
+sea_level_high_csv = csv_folder + '/int_data/noaa_slr_1ft.csv'
 
 # Set variables
-sea_level_rise_depth_ft = 1.6
+sea_level_rise_depth_ft = 0.85
 cdc_metrics = [
     'CASTHMA_CrudePrev', 'BPHIGH_CrudePrev', 'CANCER_CrudePrev', 'DIABETES_CrudePrev', 'MHLTH_CrudePrev'
 ]
