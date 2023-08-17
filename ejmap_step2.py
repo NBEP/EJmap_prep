@@ -1,7 +1,7 @@
 # ---------------------------------------------------------------------------
 # ejmap_step2.py
 # Authors: Mariel Sorlien
-# Last updated: 2023-08-16
+# Last updated: 2023-08-17
 # Python 3.7
 #
 # Description:
@@ -207,14 +207,15 @@ if add_nlcd_tree is True:
         add_raster_dataset(gis_block_groups, tree_raster, tree_csv)
     # Process csv data
     process_raster_csv(tree_csv, df_bg, 'TREE', temp_csv)
-    print('Merging with block group data')
+    print('Inverting data (% Trees to % Lack of Trees)')
     # Reread csv file
     df_tree = pd.read_csv(temp_csv, sep=',')
-    # Merge to block group data
+    # Invert column
+    df_tree['TREE'] = 1 - df_tree['TREE']
+    print('Merging with block group data')
     df_bg = pd.merge(df_bg, df_tree, on=['GEOID'], how='left')
     print('Adding variable names to list')
     all_metrics += ['TREE']
-    inverse_metrics += ['TREE']
 
 if add_nlcd_impervious_surface is True:
     print('\nADDING NLCD IMPERVIOUS DATA')
