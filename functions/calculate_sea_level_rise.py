@@ -19,20 +19,20 @@ temp_excel = arcpy.env.scratchFolder + '/temp_excel.xls'
 
 
 def intersect_slr_block_groups(slr_input, slr_erase, bg_input, csv_output):
-    print('Erasing areas that overlap next lowest flood level')
+    print('\tErasing areas that overlap next lowest flood level')
     # Avoid double count from overlapping areas
     arcpy.analysis.Erase(in_features=slr_input,
                          erase_features=slr_erase,
                          out_feature_class=temp_shp)
-    print('Intersecting SLR, block groups')
+    print('\tIntersecting SLR, block groups')
     arcpy.analysis.Intersect(in_features=[temp_shp, bg_input],
                              out_feature_class=temp_shp2)
-    print('Dissolving data')
+    print('\tDissolving data')
     # Ensure one multipart feature per block group -- prevents big problems later
     arcpy.management.Dissolve(in_features=temp_shp2,
                               out_feature_class=temp_shp,
                               dissolve_field=['GEOID', 'ALAND'])
-    print('Calculating area (square meters)')
+    print('\tCalculating area (square meters)')
     arcpy.management.AddField(in_table=temp_shp,
                               field_name='ASLR',
                               field_type='FLOAT')

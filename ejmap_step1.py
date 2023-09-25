@@ -1,7 +1,7 @@
 # ---------------------------------------------------------------------------
 # ejmap_step1.py
 # Authors: Mariel Sorlien
-# Last updated: 2023-05-05
+# Last updated: 2023-08-30
 # Python 3.7
 #
 # Description:
@@ -25,7 +25,6 @@ arcpy.env.overwriteOutput = True
 base_folder = os.getcwd()
 scratch_folder = arcpy.env.scratchFolder
 gis_folder = base_folder + '/gis_data/int_gisdata/ejmap_intdata.gdb'
-output_folder = base_folder + '/data'
 
 # Set default projection
 arcpy.env.outputCoordinateSystem = arcpy.SpatialReference('NAD 1983 UTM Zone 19N')
@@ -35,7 +34,7 @@ gis_block_groups = gis_folder + '/source_data/block_groups'
 keep_fields = ['GEOID', 'ALAND', 'AWATER']
 
 # Set output
-gis_output = gis_folder + '/block_groups_copy'
+gis_output = gis_folder + '/RICTMA_BlockGroups_2020_NBEP2023'
 
 # ------------------------------ STEP 2 -------------------------------------
 # Add towns, watersheds, study area (optional)
@@ -62,8 +61,8 @@ new_column_names = {
 # ------------------------------ STEP 3 -------------------------------------
 # Add metadata (mandatory)
 
-data_source = 'Census; MassGIS; RIGIS; CTDEEP; USGS WBD; NBEP'
-source_year = '2022; 2013, 2014, 2020; 2016, 2014; 2005, 2006; 2023; 2017'
+data_source = 'US Census; MassGIS; RIGIS; CTDEEP; USGS WBD; NBEP'
+source_year = '2020; 2021; 2001; 2005; 2023; 2017'
 
 # ---------------------------- RUN SCRIPT -----------------------------------
 
@@ -115,6 +114,15 @@ arcpy.management.DeleteField(gis_output, keep_fields, 'KEEP_FIELDS')
 if len(new_column_names) > 0:
     print('Renaming columns')
     for old_name, new_name in new_column_names.items():
+        # Check if old and new name match, ignoring case
+        # If yes - replace old name with 'temp_name'
+        if old_name.lower() == new_name.lower():
+            arcpy.management.AlterField(
+                in_table=gis_output,
+                field=old_name,
+                new_field_name='temp_name')
+            old_name = 'temp_name'
+        # Replace old name with new name
         arcpy.management.AlterField(
             in_table=gis_output,
             field=old_name,

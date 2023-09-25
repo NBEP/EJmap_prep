@@ -2,3 +2,5 @@ tabular_data
 gis_data
 .idea
 functions/__pycache__
+metadata_templates/RICTMA_blockgroup_metadata.xlsx
+metadata_templates/ejmetrics_metadata.xlsx

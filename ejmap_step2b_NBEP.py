@@ -1,7 +1,7 @@
 # ---------------------------------------------------------------------------
-# ejmap_step3_NBEP.py
+# ejmap_step2b_NBEP.py
 # Authors: Mariel Sorlien
-# Last updated: 2023-05-05
+# Last updated: 2023-09-22
 # Python 3.7
 #
 # Description:
@@ -30,17 +30,20 @@ arcpy.env.outputCoordinateSystem = arcpy.SpatialReference('NAD 1983 UTM Zone 19N
 # Set inputs
 gis_block_groups = gis_folder + '/block_groups_final'
 gis_block_groups_lowres = gis_folder + '/NBEP_block_groups_simplify_500m'
-csv_block_groups = csv_folder + '/block_groups_final.csv'
-gis_state_boundaries = gis_folder + '/towns'
+
+csv_block_groups = csv_folder + '/int_data/block_groups_final.csv'
+
+gis_metadata = base_folder + '/metadata_templates/ejmetrics_metadata.xml'
 
 # Set outputs
 gis_output = gis_folder + '/EJMETRICS_2023_NBEP2023'
+excel_output = csv_folder + '/final_data/EJMETRICS_2023_NBEP2023.xlsx'
 gis_output_lowres = gis_folder + '/EJMETRICS_2023_LOWRES_NBEP2023'
 
 # Set variables
 NBEP_year = 2023
-EPA_year = 2023
-ACS_year = 2021
+ejscreen_year = 2023
+census_year = 2020
 EPA_agreements = 'CE00A00967'
 
 # ------------------------------ SCRIPT -------------------------------------
@@ -100,33 +103,20 @@ arcpy.management.DeleteField(
 )
 
 print('Adding metadata')
-# Create a new Metadata object and add some content to it
+# Create a new Metadata object
 new_md = md.Metadata()
-# Set title
-new_md.title = 'EJMETRICS_' + str(EPA_year) + '_NBEP' + str(NBEP_year)
-# Set tags
-new_md.tags = 'environmental justice, underserved areas, population vulnerability, social vulnerability, ' \
-              'environmental risk susceptibility, EJSCREEN, population demographics, people'
-# Set summary
-new_md.summary = 'Environmental justice metrics in the Narragansett Bay region derived from the ' \
-                 'U.S. EPA (EPA) EJSCREEN dataset (EPA 2022). This dataset is intended for general planning, ' \
-                 'graphic display, and GIS analysis.'
-# Set description
-new_md.description = 'Environmental justice metrics in the Narragansett Bay region derived from the ' \
-                     'U.S. EPA (EPA) EJSCREEN dataset (EPA ' \
-                     + str(EPA_year) \
-                     + '). EJSCREEN provides population demographics and other information at the U.S. Census ' \
-                     '"block group" scale (American Community Survey ' \
-                     + str(ACS_year) \
-                     + '). EJSCREEN data was supplemented with data from the U.S. Center for Disease Control and ' \
-                     'Prevention PLACES estimate, the National Landcover Database, the First Street Foundation, ' \
-                     'and the National Oceanic and Atmospheric Administration. This data is intended for general ' \
+# Copy info from template
+new_md.importMetadata(gis_metadata)
+print('\tTitle')
+new_md.title = 'EJMETRICS_' + str(ejscreen_year) + '_NBEP' + str(NBEP_year)
+print('\tDescription')
+new_md.description = 'Environmental justice metrics in the Narragansett Bay region at the U.S. Census "block group" ' \
+                     'scale. Data from the U.S. EPA EJSCREEN (EPA ' + \
+                     str(ejscreen_year) + \
+                     ') is supplemented with data from CDC PLACES, NLCD, First Street Foundation, and NOAA. State ' \
+                     'and regional percentiles were calculated for each indicator. This data is intended for general ' \
                      'planning, graphic display, and GIS analysis.'
-# Set credits
-new_md.credits = 'U.S. Environmental Protection Agency Environmental Justice Screening and Mapping Tool (EJSCREEN); ' \
-                 'U.S. Center for Disease Control and Prevention PLACES estimate; National Land Cover Database; ' \
-                 'First Street Foundation; NOAA; Narragansett Bay Estuary Program'
-# Set constraints
+print('\tConstraints')
 new_md.accessConstraints = 'This dataset is provided "as is". The producer(s) of this dataset, contributors ' \
                            'to this dataset, and the Narragansett Bay Estuary Program (NBEP) do not make any ' \
                            'warranties of any kind for this dataset, and are not liable for any loss or damage ' \
@@ -162,7 +152,11 @@ if not tgt_item_md.isReadOnly:
     tgt_item_md.copy(new_md)
     tgt_item_md.save()
 else:
-    print('\tError: Unable to add metadata')
+    print('Error: Unable to add metadata')
+
+print('\nExporting data to excel')
+arcpy.conversion.TableToExcel(Input_Table=gis_output,
+                              Output_Excel_File=excel_output)
 
 print('\nCreating low resolution display map for leaflet')
 print('Saving shapefile copy')
@@ -194,11 +188,19 @@ arcpy.management.DeleteField(in_table=gis_output_lowres,
 print('Adding metadata')
 tgt_item_md = md.Metadata(gis_output_lowres)
 if not tgt_item_md.isReadOnly:
+    # Update title
+    new_md.title = 'EJMETRICS_' + str(ejscreen_year) + '_LOWRES_NBEP' + str(NBEP_year)
+    # Update metadata
     tgt_item_md.copy(new_md)
     tgt_item_md.save()
 else:
     print('\tError: Unable to add metadata')
 
-
 print('\nDeleting scratch folder')
 arcpy.Delete_management(scratch_folder)
+
+print('\n!!!IMPORTANT!!!')
+print('This script updates most metadata fields, but not all. METADATA MUST BE MANUALLY REVIEWED. \nPay particular '
+      'attention to following areas: \n\tCITATION (alternate title, date published, edition, other details)'
+      '\n\tCONSTRAINTS (use limitations) \n\tEXTENTS (temporal period extent) \n\tLINEAGE (data source, process '
+      'step dates) \n\tFIELDS (date range)')

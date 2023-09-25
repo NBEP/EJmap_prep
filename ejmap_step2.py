@@ -36,11 +36,11 @@ csv_folder = base_folder + '/tabular_data'
 arcpy.env.outputCoordinateSystem = arcpy.SpatialReference('NAD 1983 UTM Zone 19N')
 
 # Set inputs
-gis_block_groups = gis_folder + '/MACTRI_block_groups'
+gis_block_groups = gis_folder + '/RICTMA_BlockGroups_2020_NBEP2023'
 keep_fields = ['GEOID', 'Town', 'State', 'HUC10', 'HUC10_Name', 'Study_Area', 'ALAND', 'AWATER']
 
 # Set outputs
-csv_output = csv_folder + '/block_groups_final.csv'
+csv_output = csv_folder + '/int_data/block_groups_final.csv'
 gis_output = gis_folder + '/block_groups_final'
 
 # Set variables
