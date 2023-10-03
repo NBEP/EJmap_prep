@@ -1,10 +1,16 @@
 # EJmap_prep
 Supplements [EJScreen](https://www.epa.gov/ejscreen) data with additional datasets and calculates state and study area 
-level percentiles. Outputs shapefile and csv files that can be used for NBEP's EJmap (pending summer 2023).
+level percentiles. Outputs shapefile and csv files that can be used for [EJMap](https://github.com/NBEP/EJmap).
 
 # How To Use
-These scripts use python 3.7, ArcGIS Pro 3.1.0, and ArcGIS Spatial Analyst. Scripts should be run in the following
-order: ejmap_step1 (optional), ejmap_step2, ejmap_step3_NBEP (NBEP only).
+Standard users should run ejmap_step1 and ejmap_step2. 
+
+NBEP staff should run ejmap_step1, ejmap_step1b_NBEP, ejmap_step2, and ejmap_step2b_NBEP. 
+
+## Prerequisites
+These scripts use python 3.7, ArcGIS Pro 3.1.0, and ArcGIS Spatial Analyst.
+
+# Scripts
 
 ## ejmap_step1.py
 Adds town, watershed, and study area values to block group data. 
@@ -13,8 +19,11 @@ Adds town, watershed, and study area values to block group data.
 - [US Census TIGER/Line Shapefiles](https://www.census.gov/geographies/mapping-files/time-series/geo/tiger-line-file.html)
 - [USGS Watershed Boundary Dataset](https://www.usgs.gov/national-hydrography/access-national-hydrography-products)
 
+## ejmap_step1b_NBEP.py
+Adds metadata.
+
 ## ejmap_step2.py
-Combines multiple datasets and calculates state and study area level percentiles.
+Combines datasets and calculates state and study area level percentiles.
 
 ### Datasets
 - [EPA EJScreen](https://gaftp.epa.gov/EJSCREEN/) 
@@ -26,7 +35,7 @@ Combines multiple datasets and calculates state and study area level percentiles
   - Download "Sea Level Rise", not "Sea Level Rise Depth" 
 - [First Street](https://firststreet.org/)
 
-## ejmap_step3_NBEP.py
+## ejmap_step2b_NBEP.py
 Clips data to NBEP towns, adds metadata, and generates a simplified map for display purposes. 
 
 # Acknowledgements
